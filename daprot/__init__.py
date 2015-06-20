@@ -121,8 +121,9 @@ def add_metaclass(metaclass):
     return wrapper
 
 @add_metaclass(PrototypeGenerator)
-class DataFlow(object):
-    def __init__(self, iterable, mapper = mapper.IGNORE, prototype = None):
+class SchemaFlow(object):
+    def __init__(self, iterable, mapper = mapper.IGNORE, prototype = None, \
+                 offset = 0, limit = None):
         if not hasattr(self, 'prototype'):
             if not prototype:
                 raise exc.PrototypeRequired('Prototype declaration is required for DataFlow!')
@@ -136,11 +137,23 @@ class DataFlow(object):
             setattr(self, field.name, copy.copy(field))
 
         self.routes = self.prototype.retriev_routes(mapper)
+        self.offset = offset
+        self.limit = limit
+        self.index = 0
         self.iterable = iter(iterable)
 
-    def items(self):
-        return list(self.__iter__())
-
     def __iter__(self):
-        for element in self.iterable:
-            yield DataFrame(self, element)
+        return self
+
+    def next(self):
+        if not self.iterable or ( self.limit and self.index > self.limit ):
+            raise StopIteration
+            
+        if self.index < self.offset:
+            for p in range(self.offset): next(self.iterable)
+            self.index = self.offset
+            
+        self.index += 1
+        return DataFrame(self, next(self.iterable))
+        
+    __next__ = next
