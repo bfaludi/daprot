@@ -17,6 +17,7 @@ setup(
     license = 'GPL',
     install_requires = [
         'dm',
+        'funcomp',
     ],
     test_suite = "daprot.tests"
 )

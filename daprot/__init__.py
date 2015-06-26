@@ -23,21 +23,44 @@ import copy
 from bisect import bisect
 from . import mapper, exceptions as exc
 from types import FunctionType
+from collections import Iterable, Callable
+from funcomp import Composition
 from dm import Mapper
 
 class Field(object):
     _creation_counter = 0
 
     def __init__(self, route = None, type = None, default_value = None, \
-                 name = None ):
+                 transforms = None, name = None ):
         self.name = name
         self.type = type
         self.route = route
         self.default_value = default_value
         self.index = None
+        self.transforms = transforms
 
         self._creation_counter = Field._creation_counter
         Field._creation_counter += 1
+
+    def transforms():
+        def fget(self):
+            return self._transforms
+            
+        def fset(self, transforms):
+            if not transforms:
+                transforms = []
+            
+            if not isinstance(transforms, Iterable):
+                transforms = [transforms]
+            
+            self._transforms = Composition(*iter(transforms))
+            
+        def fdel(self):
+            self._transforms = []
+        
+        return locals()
+        
+    transforms = property(**transforms())
 
     def __cmp__(self, other):
         return cmp( self._creation_counter, other._creation_counter )
@@ -53,12 +76,28 @@ class Field(object):
             return self.route
 
         return default_mapper(self)
+        
+    def retriev_default_value(self):
+        if self.default_value is None:
+            return None
+        
+        if isinstance(self.default_value, Callable):
+            return self.default_value()
+        
+        return self.default_value
 
     def convert_value(self, value):
         if self.type is None:
             return value
 
         return self.type(value)
+        
+    def retriev_value(self, value):
+        cv = self.convert_value(value)
+        if cv is None:
+            return self.retriev_default_value()
+        
+        return self.transforms(cv)
 
 class Prototype(object):
     def __init__(self, *fields):
@@ -102,7 +141,7 @@ class PrototypeGenerator(type):
 
 class DataFrame(dict):
     def __new__(cls, df, data):
-        return { name : getattr(df, name).convert_value(value) for name, value \
+        return { name : getattr(df, name).retriev_value(value) for name, value \
             in Mapper(data, routes = df.routes).getRoutes().items() }
 
 # Python 2 & 3 metaclass decorator from `six` package.
@@ -126,12 +165,14 @@ class SchemaFlow(object):
                  offset = 0, limit = None):
         if not hasattr(self, 'prototype'):
             if not prototype:
-                raise exc.PrototypeRequired('Prototype declaration is required for DataFlow!')
+                raise exc.PrototypeRequired( \
+                    'Prototype declaration is required for DataFlow!')
 
             self.prototype = prototype
 
         elif prototype:
-            raise exc.PrototypeAlreadySet('DataFlow object has already a Prototype!')
+            raise exc.PrototypeAlreadySet( \
+                'DataFlow object has already a Prototype!')
 
         for field in self.prototype.fields:
             setattr(self, field.name, copy.copy(field))
