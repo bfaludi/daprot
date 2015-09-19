@@ -187,7 +187,7 @@ class SchemaFlow(object):
         return self
 
     def next(self):
-        if not self.iterable or ( self.limit and self.index > self.limit ):
+        if not self.iterable or ( self.limit and self.index >= self.offset+self.limit ):
             raise StopIteration
             
         if self.index < self.offset:
