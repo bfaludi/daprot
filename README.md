@@ -18,7 +18,7 @@ The package is compatible with Python 2 & 3.
 
 ## Quick tutorial
 
-### Grab foursquare venues
+### 1. Grab foursquare venues
 
 Let's see an example where we're using foursquare's [venue search API](https://developer.foursquare.com/docs/explore#req=venues/search%3Fll%3D40.7,-74).
 
@@ -28,8 +28,8 @@ We can write a short Python code and iterate over the response. During the proce
 import dm
 import json
 import daprot as dp
-import uniopen # You can use `requests` and `urllib` package too.
-import forcedtypes as t # Using this package because I want to force `postal_code` to integer.
+import uniopen # You can use `requests` or `urllib` package too.
+import forcedtypes as t # Using this package because I want to force `postal_code` value to integer.
 
 foursquare_venue_search_url = 'https://api.foursquare.com/v2/venues/search?ll=40.7,-74&oauth_token=...'
 
@@ -58,11 +58,24 @@ with uniopen.Open(foursquare_venue_search_url) as rs:
 This is the output of the first line.
 
 ```python
-{'phone_number': u'+12128033822', 'city': u'Brooklyn', 'name': u'Brooklyn Bridge Park', 'check_in_count': 37081, 'country': u'United States', 'facebook_id': u'104475634308', 'twitter_id': u'nycparks', 'longitude': -73.9965033531189, 'postal_code': 11201L, 'tip_count': 224, 'address': u'Main St', 'latitude': 40.70227697066692, 'id': u'430d0a00f964a5203e271fe3', 'categories': [u'Park']}
+{
+  'phone_number': u'+12128033822',
+  'city': u'Brooklyn', 
+  'name': u'Brooklyn Bridge Park', 
+  'check_in_count': 37081, 
+  'country': u'United States', 
+  'facebook_id': u'104475634308', 
+  'twitter_id': u'nycparks', 
+  'longitude': -73.9965033531189, 
+  'postal_code': 11201L, 
+  'tip_count': 224, 
+  'address': u'Main St', 
+  'latitude': 40.70227697066692, 
+  'id': u'430d0a00f964a5203e271fe3', 
+  'categories': [u'Park']
+}
 ```
 ... and it was the original result of the same venue:
-
-This is a single venue in JSON.
 
 ```json
 {  
@@ -135,6 +148,73 @@ This is a single venue in JSON.
    },
    "referralId":"v-1442770357"
 }
+```
+
+### 2. Read and convert values
+
+We have a fixed width text file and It contains product informations. (e.g.: id, name, formatted price in HUF, quantity, last updated date).
+
+```txt
+P0001   Tomato           449      1     2015.09.20 20:00
+P0002   Paprika          399      1     2015.09.20 20:02
+P0003      Cucumber      199      10
+P0004   Chicken nuggets  999,5    1     2015.09.20 12:47
+P0005   Chardonnay       2 399    1     2015.09.20 07:31
+```
+
+We can write a short Python script to read this file and convert `price` information to float, remove extra whitespaces.
+
+```python
+import uniopen
+import datetime
+import daprot as dp
+import forcedtypes as t
+
+class Groceries(dp.SchemaFlow):
+    id = dp.Field('0:8')
+    name = dp.Field('8:25', type=str, transforms=str.strip)
+    price = dp.Field('25:34', type=t.new(t.Float, locale='hu_HU'))
+    quantity = dp.Field('34:40', type=int)
+    updated_at = dp.Field('40:', type=t.Datetime, default_value=datetime.datetime.now)
+
+with uniopen.Open('groceries.txt', 'r', encoding='utf-8') as rs:
+    print(list(Groceries(rs)))
+```
+
+This is the result:
+
+```python
+[{
+  'price': 449.0,
+  'quantity': 1,
+  'id': u 'P0001',
+  'name': 'Tomato',
+  'updated_at': datetime.datetime(2015, 9, 20, 20, 0)
+}, {
+  'price': 399.0,
+  'quantity': 1,
+  'id': u 'P0002',
+  'name': 'Paprika',
+  'updated_at': datetime.datetime(2015, 9, 20, 20, 2)
+}, {
+  'price': 199.0,
+  'quantity': 10,
+  'id': u 'P0003',
+  'name': 'Cucumber',
+  'updated_at': datetime.datetime(2015, 9, 20, 20, 17, 28, 846543)
+}, {
+  'price': 999.5,
+  'quantity': 1,
+  'id': u 'P0004',
+  'name': 'Chicken nuggets',
+  'updated_at': datetime.datetime(2015, 9, 20, 12, 47)
+}, {
+  'price': 2399.0,
+  'quantity': 1,
+  'id': u 'P0005',
+  'name': 'Chardonnay',
+  'updated_at': datetime.datetime(2015, 9, 20, 7, 31)
+}]
 ```
 
 ## License
