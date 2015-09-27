@@ -30,3 +30,7 @@ def INDEX(field):
 # NoneType
 def IGNORE(field):
     return None
+
+# str
+def INHERITED(field):
+    return ''

@@ -284,3 +284,104 @@ class TestSchemaFlowWithDefaultValue(unittest.TestCase):
         data = list(self.Schema(self.list_data, mapper=dp.mapper.INDEX))
         self.assertEqual(data[-1]['original_title'], '  grape')
         self.assertEqual(data[-1]['title'], 'GRAPE')
+
+class TestNestedSchemaFlow(unittest.TestCase):
+    class Schema(dp.SchemaFlow):
+        class BaseContactSchema(dp.SchemaFlow):
+            phone_number = dp.Field('contact/phone')
+            address = dp.Field('location/address')
+
+        class RelContactSchema(dp.SchemaFlow):
+            phone_number = dp.Field('phone')
+            phone = dp.Field()
+
+        class RelCategorySchema(dp.SchemaFlow):
+            category_id = dp.Field('id')
+            category_name = dp.Field('name')
+            name = dp.Field()
+
+        def revert_list(lst):
+            lst.reverse()
+            return lst
+
+        base_contact = dp.DictOf(BaseContactSchema) # If you don't define `route`, it will use the parent's path.
+        rel_contact = dp.DictOf(RelContactSchema, route='contact')
+        not_existing_contact = dp.DictOf(RelContactSchema, route='notexists')
+        categories = dp.ListOf(RelCategorySchema, route='categories')
+        rev_categories = dp.ListOf(RelCategorySchema, route='categories', transforms=revert_list)
+        not_existing_categories = dp.ListOf(RelCategorySchema, route='notexists')
+        phone_number = dp.Field('contact/phone')
+        address = dp.Field('location/address')
+        category_name = dp.Field('categories/0/name')
+        
+    def test_dict_of_without_route(self):
+        self.assertEqual(self.data['base_contact']['phone_number'], self.data['phone_number'])
+        self.assertEqual(self.data['base_contact']['address'], self.data['address'])
+        
+    def test_dict_of_with_route(self):
+        self.assertEqual(self.data['rel_contact']['phone_number'], self.data['phone_number'])
+        self.assertEqual(self.data['rel_contact']['phone'], self.data['phone_number'])
+
+    def test_dict_of_with_not_existing_route(self):
+        self.assertEqual(self.data['not_existing_contact'], {})
+
+    def test_list_of_with_route(self):
+        self.assertEqual(len(self.data['categories']), 2)
+        self.assertEqual(self.data['categories'][0]['category_name'], self.data['category_name'])
+        self.assertEqual(self.data['categories'][0]['category_name'], self.data['categories'][0]['name'])
+        self.assertEqual(self.data['categories'][0]['name'], self.data['rev_categories'][1]['name'])
+
+    def test_list_of_with_not_existing_route(self):
+        self.assertEqual(self.data['not_existing_categories'], [])
+
+    def setUp(self):
+        self.list_data = [{
+            u'verified': True,
+            u'name': u'Brooklyn Bridge Park',
+            u'referralId': u'v-1442770357',
+            u'url': u'http://nyc.gov/parks',
+            u'hereNow': {u'count': 7, u'groups': [{
+                u'count': 7,
+                u'items': [],
+                u'type': u'others',
+                u'name': u'Other people here',
+                }], u'summary': u'7 people are here'},
+            u'specials': {u'count': 0, u'items': []},
+            u'contact': {
+                u'facebookName': u'Bartow-Pell Mansion Museum',
+                u'twitter': u'nycparks',
+                u'phone': u'+12128033822',
+                u'facebook': u'104475634308',
+                u'formattedPhone': u'+1 212-803-3822',
+                u'facebookUsername': u'BartowPell',
+            },
+            u'location': {
+                u'distance': 389,
+                u'city': u'Brooklyn',
+                u'cc': u'US',
+                u'country': u'United States',
+                u'postalCode': u'11201',
+                u'state': u'NY',
+                u'formattedAddress': [u'Main St (Plymouth St)',
+                                      u'Brooklyn, NY 11201', u'United States'],
+                u'crossStreet': u'Plymouth St',
+                u'address': u'Main St',
+                u'lat': 40.70227697066692,
+                u'lng': -73.9965033531189,
+            },
+            u'stats': {u'tipCount': 224, u'checkinsCount': 37083,
+                       u'usersCount': 22618},
+            u'id': u'430d0a00f964a5203e271fe3',
+            u'categories': [{
+                u'pluralName': u'Parks',
+                u'primary': True,
+                u'name': u'Park',
+                u'shortName': u'Park',
+                u'id': u'4bf58dd8d48988d163941735',
+                u'icon': {u'prefix': u'https://ss3.4sqi.net/img/categories_v2/parks_outdoors/park_'
+                          , u'suffix': u'.png'},
+            }, {
+                u'name': u'Other',
+            }],
+        }]
+        self.data = list(self.Schema(self.list_data, mapper=dp.mapper.NAME))[0]
