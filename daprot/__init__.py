@@ -99,6 +99,33 @@ class Field(object):
         
         return self.transforms(cv)
 
+class NestedField(object):
+    def retriev_route(self, default_mapper):
+        return super(NestedField, self).retriev_route(default_mapper \
+            if self.route is not None else mapper.INHERITED)
+
+class ListOf(NestedField, Field):
+    def __init__(self, prototype, route, default_value = None, \
+                 transforms = None, name = None):
+        self.prototype = prototype
+        super(ListOf, self).__init__(route, None, default_value or [], transforms, name)
+
+    def retriev_value(self, value):
+        if value is None: return self.retriev_default_value()
+        cv = list(self.prototype(value, mapper=self.parent.mapper))
+        return self.transforms(cv)
+
+class DictOf(NestedField, Field):
+    def __init__(self, prototype, route = None, default_value = None, \
+                 transforms = None, name = None):
+        self.prototype = prototype
+        super(DictOf, self).__init__(route, None, default_value or {}, transforms, name)
+
+    def retriev_value(self, value):
+        if value is None: return self.retriev_default_value()
+        schema_flow = self.prototype([value], mapper=self.parent.mapper)
+        return self.transforms(DataFrame(schema_flow, value))
+
 class Prototype(object):
     def __init__(self, *fields):
         if not len(fields):
@@ -176,8 +203,11 @@ class SchemaFlow(object):
 
         for field in self.prototype.fields:
             setattr(self, field.name, copy.copy(field))
+            if isinstance(field, NestedField):
+                getattr(self, field.name).parent = self
 
         self.routes = self.prototype.retriev_routes(mapper)
+        self.mapper = mapper
         self.offset = offset
         self.limit = limit
         self.index = 0
