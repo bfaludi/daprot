@@ -217,6 +217,50 @@ This is the result:
 }]
 ```
 
+### 3. Create nested elements on demand.
+
+You can create sub-lists and sub-dictionaries during the mapping. Let's see a new example where we're using the same foursquare's [API](https://developer.foursquare.com/docs/explore#req=venues/search%3Fll%3D40.7,-74).
+
+```python
+import dm
+import json
+import daprot as dp
+import uniopen # You can use `requests` or `urllib` package too.
+import forcedtypes as t # Using this package because I want to force `postal_code` value to integer.
+
+foursquare_venue_search_url = 'https://api.foursquare.com/v2/venues/search?ll=40.7,-74&oauth_token=...'
+
+class Contact(dp.SchemaFlow):
+    phone_number = dp.Field('contact/phone')
+    twitter_id = dp.Field('contact/twitter')
+    facebook_id = dp.Field('contact/facebook')
+    address = dp.Field('location/address')
+    postal_code = dp.Field('location/postalCode', type=t.Int)
+    city = dp.Field('location/city')
+    country = dp.Field('location/country')
+    latitude = dp.Field('location/lat', type=float)
+    longitude = dp.Field('location/lng', type=float)
+
+class Category(dp.SchemaFlow):
+    category_id = dp.Field('id')
+    name = dp.Field()
+
+class Venues(dp.SchemaFlow):
+    venue_id = dp.Field('id')
+    name = dp.Field()
+    categories = dp.ListOf(Category, route='categories')
+    contact = dp.DictOf(Contact) # Using the same `route` as the parent.
+    check_in_count = dp.Field('stats/checkinsCount', type=int)
+    tip_count = dp.Field('stats/tipCount', type=int)
+
+with uniopen.Open(foursquare_venue_search_url) as rs:
+    api_result = dm.Mapper(json.load(rs))
+    for venue in Venues(api_result['response/venues/!'], mapper=dp.mapper.NAME):
+        print(venue)
+```
+
+As you can see You can define `DictOf` and `ListOf` items easily. Do not forget, the `transforms` and `default_value` attributes are still operational.
+
 ## License
 
 Copyright © 2015 Bence Faludi.
