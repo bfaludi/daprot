@@ -1,4 +1,4 @@
-# daprot
+# daprot [![Build Status](https://travis-ci.org/bfaludi/daprot.svg)](https://travis-ci.org/bfaludi/daprot)
 
 You can iterate over a dataset and load your data into the right place while it will convert and transform the data as well. At the end you will have a list of dictionaries containing your fixed data.
 
@@ -14,7 +14,7 @@ However, I suggest you to check the following link as well.
 - [uniopen](https://github.com/bfaludi/uniopen) Open any kind of file/url/database with the same interface.
 - [forcedtypes](https://github.com/bfaludi/forcedtypes) To force crappy quality data into python type. Less error, less line. :)
 
-The package is compatible with Python 2 & 3.
+The package is compatible with Python **2.7** & **3.3+**.
 
 ## Quick tutorial
 
