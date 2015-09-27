@@ -1,4 +1,4 @@
-# daprot
+# daprot [![Build Status](https://travis-ci.org/bfaludi/daprot.svg)](https://travis-ci.org/bfaludi/daprot)
 
 You can iterate over a dataset and load your data into the right place while it will convert and transform the data as well. At the end you will have a list of dictionaries containing your fixed data.
 
