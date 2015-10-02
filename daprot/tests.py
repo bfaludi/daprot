@@ -56,6 +56,9 @@ class TestSchemaFlowClass(unittest.TestCase):
     def test_offset_limit(self):
         self.assertEqual(2, len(list(self.BasicSchema(self.list_data, offset=2, limit=2))))
 
+    def test_is_nested(self):
+        self.assertFalse(self.BasicSchema(self.list_data).is_nested())
+
 class TestSchemaFlowClassWithoutRoute(unittest.TestCase):
     class BasicSchema(dp.SchemaFlow):
         id = dp.Field()
@@ -70,7 +73,7 @@ class TestSchemaFlowClassWithoutRoute(unittest.TestCase):
             ['  5 ', '  ', '2015-06-20'],
             [' 9 ', '  grape', '2012-01-01 00:00:00'],
         ]
-        
+
         self.dict_data = [
             {'created_at': '2014-05-06 17:22:32', 'id': '1', 'name': 'apple'},
             {'created_at': '2015-02-01 13:42:32', 'id': '3', 'name': 'orange'},
@@ -151,6 +154,9 @@ class TestSchemaFlowClassWithoutRoute(unittest.TestCase):
             {'created_at': None, 'id': None, 'name': None}
         ], list(self.BasicSchema(self.dict_data)) )
 
+    def test_is_nested(self):
+        self.assertFalse(self.BasicSchema(self.dict_data).is_nested())
+
 class TestSchemaFlowClassWithRoute(unittest.TestCase):
     class Schema(dp.SchemaFlow):
         id = dp.Field()
@@ -186,6 +192,9 @@ class TestSchemaFlowClassWithRoute(unittest.TestCase):
             {'updated_at': '2012-01-01 00:00:00', 'created_at': '2012-01-01 00:00:00', 'id': None, 'name': '  grape'}
         ], list(self.Schema(self.dict_data)) )
 
+    def test_is_nested(self):
+        self.assertFalse(self.Schema(self.dict_data).is_nested())
+
 class TestSchemaFlowWithType(unittest.TestCase):
     class ValidSchema(dp.SchemaFlow):
         id = dp.Field(type=int)
@@ -201,7 +210,7 @@ class TestSchemaFlowWithType(unittest.TestCase):
             ['  5 ', '  ', '2015-06-20'],
             [' 9 ', '  grape', '2012-01-01 00:00:00'],
         ]
-        
+
         self.not_valid_list_data = [
             ['1', 'apple', '2014-05-06 17:22:32'],
             ['3', None, '2015-02-01 13:42:32'],
@@ -231,6 +240,9 @@ class TestSchemaFlowWithType(unittest.TestCase):
         # You can use forcedtypes package instead of the std library.
         with self.assertRaises(ValueError):
             list(self.ValidSchema(self.not_valid_list_data, mapper=dp.mapper.INDEX))
+
+    def test_is_nested(self):
+        self.assertFalse(self.ValidSchema(self.list_data).is_nested())
 
 class TestSchemaFlowWithDefaultValue(unittest.TestCase):
     class Schema(dp.SchemaFlow):
@@ -266,6 +278,9 @@ class TestSchemaFlowWithDefaultValue(unittest.TestCase):
         data = list(self.Schema(self.list_data, mapper=dp.mapper.INDEX))
         self.assertNotEqual(data[1]['date_current'], data[3]['date_current'])
 
+    def test_is_nested(self):
+        self.assertFalse(self.Schema(self.list_data).is_nested())
+
 class TestSchemaFlowWithDefaultValue(unittest.TestCase):
     class Schema(dp.SchemaFlow):
         original_title = dp.Field(route=1, type=str)
@@ -279,11 +294,14 @@ class TestSchemaFlowWithDefaultValue(unittest.TestCase):
             ['  5 ', '  ', None],
             [' 9 ', '  grape', '2012-01-01 00:00:00'],
         ]
-    
+
     def test_transforms(self):
         data = list(self.Schema(self.list_data, mapper=dp.mapper.INDEX))
         self.assertEqual(data[-1]['original_title'], '  grape')
         self.assertEqual(data[-1]['title'], 'GRAPE')
+
+    def test_is_nested(self):
+        self.assertFalse(self.Schema(self.list_data).is_nested())
 
 class TestNestedSchemaFlow(unittest.TestCase):
     class Schema(dp.SchemaFlow):
@@ -313,11 +331,11 @@ class TestNestedSchemaFlow(unittest.TestCase):
         phone_number = dp.Field('contact/phone')
         address = dp.Field('location/address')
         category_name = dp.Field('categories/0/name')
-        
+
     def test_dict_of_without_route(self):
         self.assertEqual(self.data['base_contact']['phone_number'], self.data['phone_number'])
         self.assertEqual(self.data['base_contact']['address'], self.data['address'])
-        
+
     def test_dict_of_with_route(self):
         self.assertEqual(self.data['rel_contact']['phone_number'], self.data['phone_number'])
         self.assertEqual(self.data['rel_contact']['phone'], self.data['phone_number'])
@@ -385,3 +403,6 @@ class TestNestedSchemaFlow(unittest.TestCase):
             }],
         }]
         self.data = list(self.Schema(self.list_data, mapper=dp.mapper.NAME))[0]
+
+    def test_is_nested(self):
+        self.assertTrue(self.Schema(self.list_data).is_nested())
