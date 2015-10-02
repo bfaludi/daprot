@@ -30,6 +30,7 @@ from dm import Mapper
 class Field(object):
     _creation_counter = 0
 
+    # void
     def __init__(self, route = None, type = None, default_value = None, \
                  transforms = None, name = None ):
         self.name = name
@@ -42,32 +43,36 @@ class Field(object):
         self._creation_counter = Field._creation_counter
         Field._creation_counter += 1
 
+    # tuple
     def transforms():
         def fget(self):
             return self._transforms
-            
+
         def fset(self, transforms):
             if not transforms:
                 transforms = []
-            
+
             if not isinstance(transforms, Iterable):
                 transforms = [transforms]
-            
+
             self._transforms = Composition(*iter(transforms))
-            
+
         def fdel(self):
             self._transforms = []
-        
+
         return locals()
-        
+
     transforms = property(**transforms())
 
+    # int
     def __cmp__(self, other):
         return cmp( self._creation_counter, other._creation_counter )
 
+    # bool
     def __lt__(self, other):
         return self._creation_counter < other._creation_counter
 
+    # str
     def retriev_route(self, default_mapper):
         if type(self.route) is FunctionType:
             return self.route(self)
@@ -76,57 +81,66 @@ class Field(object):
             return self.route
 
         return default_mapper(self)
-        
+
+    # type
     def retriev_default_value(self):
         if self.default_value is None:
             return None
-        
+
         if isinstance(self.default_value, Callable):
             return self.default_value()
-        
+
         return self.default_value
 
+    # type
     def convert_value(self, value):
         if self.type is None:
             return value
 
         return self.type(value)
-        
+
+    # type
     def retriev_value(self, value):
         cv = self.convert_value(value)
         if cv is None:
             return self.retriev_default_value()
-        
+
         return self.transforms(cv)
 
 class NestedField(object):
+    # str
     def retriev_route(self, default_mapper):
         return super(NestedField, self).retriev_route(default_mapper \
             if self.route is not None else mapper.INHERITED)
 
 class ListOf(NestedField, Field):
+    # void
     def __init__(self, prototype, route, default_value = None, \
                  transforms = None, name = None):
         self.prototype = prototype
         super(ListOf, self).__init__(route, None, default_value or [], transforms, name)
 
+    # list
     def retriev_value(self, value):
         if value is None: return self.retriev_default_value()
         cv = list(self.prototype(value, mapper=self.parent.mapper))
         return self.transforms(cv)
 
 class DictOf(NestedField, Field):
+    # void
     def __init__(self, prototype, route = None, default_value = None, \
                  transforms = None, name = None):
         self.prototype = prototype
         super(DictOf, self).__init__(route, None, default_value or {}, transforms, name)
 
+    # dict
     def retriev_value(self, value):
         if value is None: return self.retriev_default_value()
         schema_flow = self.prototype([value], mapper=self.parent.mapper)
         return self.transforms(DataFrame(schema_flow, value))
 
 class Prototype(object):
+    # void
     def __init__(self, *fields):
         if not len(fields):
             raise exc.FieldRequired('Prototype requires at least one Field!')
@@ -144,10 +158,12 @@ class Prototype(object):
         self.fields = fields
         self.reindex()
 
+    # void
     def reindex(self):
         for index in range(len(self.fields)):
             self.fields[index].index = index
 
+    # dict
     def retriev_routes(self, default_mapper):
         return { field.name : field.retriev_route(default_mapper) \
             for field in self.fields }
@@ -188,6 +204,7 @@ def add_metaclass(metaclass):
 
 @add_metaclass(PrototypeGenerator)
 class SchemaFlow(object):
+    # void
     def __init__(self, iterable, mapper = mapper.IGNORE, prototype = None, \
                  offset = 0, limit = None):
         if not hasattr(self, 'prototype'):
@@ -213,18 +230,29 @@ class SchemaFlow(object):
         self.index = 0
         self.iterable = iter(iterable)
 
+    # bool
+    def is_nested(self):
+        for field in self.prototype.fields:
+            if isinstance(field, NestedField):
+                return True
+
+        return False
+
+    # SchemaFlow
     def __iter__(self):
         return self
 
+    # dict
     def next(self):
         if not self.iterable or ( self.limit and self.index >= self.offset+self.limit ):
             raise StopIteration
-            
+
         if self.index < self.offset:
             for p in range(self.offset): next(self.iterable)
             self.index = self.offset
-            
+
         self.index += 1
         return DataFrame(self, next(self.iterable))
-        
+
+    # dict
     __next__ = next
