@@ -230,9 +230,13 @@ class SchemaFlow(object):
         self.index = 0
         self.iterable = iter(iterable)
 
+    # list<>
+    def get_fields(self):
+        return [ getattr(self, field.name) for field in self.prototype.fields ]
+
     # bool
     def is_nested(self):
-        for field in self.prototype.fields:
+        for field in self.get_fields():
             if isinstance(field, NestedField):
                 return True
 
