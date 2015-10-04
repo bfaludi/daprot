@@ -230,9 +230,13 @@ class SchemaFlow(object):
         self.index = 0
         self.iterable = iter(iterable)
 
+    @property
+    def fieldnames(self):
+        return [ field.name for field in self.prototype.fields ]
+
     # list<>
     def get_fields(self):
-        return [ getattr(self, field.name) for field in self.prototype.fields ]
+        return [ getattr(self, name) for name in self.fieldnames ]
 
     # bool
     def is_nested(self):
