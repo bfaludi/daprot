@@ -1,4 +1,9 @@
-# daprot [![Build Status](https://travis-ci.org/bfaludi/daprot.svg)](https://travis-ci.org/bfaludi/daprot)
+# daprot
+
+[![Build Status](https://travis-ci.org/bfaludi/daprot.svg)](https://travis-ci.org/bfaludi/daprot)
+![Downloads](https://img.shields.io/pypi/dm/daprot.svg)
+![Version](https://img.shields.io/pypi/v/daprot.svg)
+![License](https://img.shields.io/pypi/l/daprot.svg)
 
 You can iterate over a dataset and load your data into the right place while it will convert and transform the data as well. At the end you will have a list of dictionaries containing your fixed data.
 
